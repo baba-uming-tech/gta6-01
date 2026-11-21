@@ -365,6 +365,10 @@ function handleActions() {
   if (game.state === 'play') {
     if (input.pressed(KEYBINDS.save)) saveNow();
     if (input.pressed(KEYBINDS.load)) loadNow();
+    if (input.pressed(KEYBINDS.raiseWanted)) {
+      police.addStar();
+      hud.toast(`WANTED · ${'★'.repeat(police.wanted)}`);
+    }
   }
 }
 

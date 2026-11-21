@@ -27,13 +27,20 @@ export const QUALITY = {
   high: { pixelRatio: 1.5, label: 'high' },
 };
 
+export const NIGHT = {
+  ambient: 0.62,
+  lampGlowOpacity: 0.95,
+  lampPoolOpacity: 0.82,
+  signGlowOpacity: 0.3,
+};
+
 export const KEYBINDS = {
   forward: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD',
   sprint: 'ShiftLeft', jump: 'Space', handbrake: 'ShiftLeft',
   enter: 'KeyE', fire: 'Mouse0', aim: 'Mouse2', reload: 'KeyR',
   weapon1: 'Digit1', weapon2: 'Digit2', weapon3: 'Digit3',
   camera: 'KeyC', map: 'KeyM', pause: 'Escape',
-  save: 'F5', load: 'F9', confirm: 'Enter',
+  save: 'F5', load: 'F9', confirm: 'Enter', raiseWanted: 'KeyK',
 };
 
 export const DISTRICT = [

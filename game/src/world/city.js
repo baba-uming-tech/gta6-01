@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { WORLD, PALETTE, DISTRICT } from '../config.js';
+import { WORLD, PALETTE, DISTRICT, NIGHT } from '../config.js';
 import { makeRng, clamp } from '../core/rng.js';
 import { makeBox, makeCylinder, mergeParts, facadeTexture, textTexture } from '../render/parts.js';
 import { RoadGraph } from './graph.js';
@@ -12,6 +12,8 @@ const ROWS = WORLD.grid - 1;
 const ORIGIN_X = -WORLD.block * COLS / 2;
 const ORIGIN_Z = -WORLD.block * ROWS / 2;
 const BUILDING_Y = 0.34;
+const SPAWN = [-164, 1.75, 227.5];
+const SPAWN_CLEARANCE = 4;
 
 const MATRIX = new THREE.Matrix4();
 const POSITION = new THREE.Vector3();
@@ -45,13 +47,21 @@ function blockCenter(i, j) {
 function makeCollision() {
   const cell = WORLD.block;
   const cells = new Map();
+  const clearZones = [];
   let stamp = 0;
 
   function key(cx, cz) {
     return `${cx},${cz}`;
   }
 
+  function reserve(minX, maxX, minZ, maxZ) {
+    clearZones.push({ minX, maxX, minZ, maxZ });
+  }
+
   function add(minX, maxX, minZ, maxZ) {
+    for (const zone of clearZones) {
+      if (minX < zone.maxX && maxX > zone.minX && minZ < zone.maxZ && maxZ > zone.minZ) return;
+    }
     const box = { minX, maxX, minZ, maxZ, stamp: -1 };
     const fromX = Math.floor(minX / cell);
     const toX = Math.floor(maxX / cell);
@@ -72,11 +82,12 @@ function makeCollision() {
 
   function collide(pos, radius = 0.6) {
     stamp += 1;
-    const fromX = Math.floor((pos.x - radius) / cell);
-    const toX = Math.floor((pos.x + radius) / cell);
-    const fromZ = Math.floor((pos.z - radius) / cell);
-    const toZ = Math.floor((pos.z + radius) / cell);
     for (let pass = 0; pass < 2; pass += 1) {
+      const fromX = Math.floor((pos.x - radius) / cell);
+      const toX = Math.floor((pos.x + radius) / cell);
+      const fromZ = Math.floor((pos.z - radius) / cell);
+      const toZ = Math.floor((pos.z + radius) / cell);
+      let moved = false;
       for (let cx = fromX; cx <= toX; cx += 1) {
         for (let cz = fromZ; cz <= toZ; cz += 1) {
           const bucket = cells.get(key(cx, cz));
@@ -88,27 +99,36 @@ function makeCollision() {
             const maxX = box.maxX + radius;
             const minZ = box.minZ - radius;
             const maxZ = box.maxZ + radius;
-            if (pos.x <= minX || pos.x >= maxX || pos.z <= minZ || pos.z >= maxZ) continue;
+            const inside = pos.x > minX && pos.x < maxX && pos.z > minZ && pos.z < maxZ;
+            if (!inside) continue;
             const left = pos.x - minX;
             const right = maxX - pos.x;
             const back = pos.z - minZ;
             const front = maxZ - pos.z;
             const smallest = Math.min(left, right, back, front);
+            if (smallest <= 0) continue;
             if (smallest === left) pos.x = minX;
             else if (smallest === right) pos.x = maxX;
             else if (smallest === back) pos.z = minZ;
             else pos.z = maxZ;
+            moved = true;
           }
         }
       }
+      if (!moved) break;
     }
-    pos.x = clamp(pos.x, ORIGIN_X - ROAD_HALF + 1, ORIGIN_X + COLS * WORLD.block + ROAD_HALF - 1);
+    const minX = ORIGIN_X - ROAD_HALF + 1;
+    const maxX = ORIGIN_X + COLS * WORLD.block + ROAD_HALF - 1;
+    const minZ = ORIGIN_Z - ROAD_HALF + 1;
     const shore = pos.x > 120 ? 336 : pos.x < 20 ? 292 : 266;
-    pos.z = clamp(pos.z, ORIGIN_Z - ROAD_HALF + 1, shore);
+    if (pos.x < minX) pos.x = minX;
+    else if (pos.x > maxX) pos.x = maxX;
+    if (pos.z < minZ) pos.z = minZ;
+    else if (pos.z > shore) pos.z = shore;
     return pos;
   }
 
-  return { add, collide, count: () => cells.size };
+  return { add, collide, reserve, count: () => cells.size };
 }
 
 function buildSurfaces(group, quality) {
@@ -390,7 +410,7 @@ function hydrantPrototype() {
   ]);
 }
 
-function buildStreetProps(group, rng, quality, collision) {
+function buildStreetProps(group, rng, quality) {
   const palms = [];
   const lamps = [];
   const lights = [];
@@ -449,7 +469,6 @@ function buildStreetProps(group, rng, quality, collision) {
       }
       if ((i + j) % 4 === 1) {
         hydrants.push({ x: x + ROAD_HALF + 1.3, y: 0.28, z: z - ROAD_HALF - 1.3, color: '#ffffff' });
-        collision.add(x + ROAD_HALF + 0.9, x + ROAD_HALF + 1.7, z - ROAD_HALF - 1.7, z - ROAD_HALF - 0.9);
       }
     }
   }
@@ -476,8 +495,11 @@ function buildStreetProps(group, rng, quality, collision) {
   const lampsOn = [
     addInstances(group, makeBox(1.05, 0.1, 0.55, '#ffffff'),
       new THREE.MeshBasicMaterial({ vertexColors: true, fog: false }), glows),
-    addInstances(group, makeBox(6.4, 0.02, 6.4, '#ffffff'),
-      new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.55, depthWrite: false }), pools),
+    addInstances(group, makeBox(8.2, 0.02, 8.2, '#ffffff'),
+      new THREE.MeshBasicMaterial({
+        vertexColors: true, transparent: true, opacity: NIGHT.lampPoolOpacity,
+        depthWrite: false, fog: false,
+      }), pools),
   ];
   for (const mesh of lampsOn) mesh.visible = false;
 
@@ -497,6 +519,7 @@ function buildStreetProps(group, rng, quality, collision) {
 }
 
 function buildBillboards(group) {
+  const nightSigns = [];
   const brands = [
     { text: 'SOL BRAVO', bg: '#b6403f', color: '#fff3d4', border: '#e8c35a' },
     { text: 'RADIO MAREA 88.7', bg: '#1d3a52', color: '#37e0d6', border: '#37e0d6' },
@@ -536,7 +559,26 @@ function buildBillboards(group) {
       .filter((spot) => spot.brand === brand)
       .map((spot) => ({ x: spot.x, y: 7.5, z: spot.z, rotation: spot.rot, color: '#ffffff' }));
     addInstances(group, sign, material, placements);
+    const glowPlacements = spots
+      .filter((spot) => spot.brand === brand)
+      .map((spot) => ({
+        x: spot.x + Math.sin(spot.rot) * 0.28,
+        y: 7.5,
+        z: spot.z + Math.cos(spot.rot) * 0.28,
+        rotation: spot.rot,
+        color: brands[brand].border,
+      }));
+    const glow = addInstances(group, makeBox(11, 5.6, 0.12, '#ffffff'),
+      new THREE.MeshBasicMaterial({
+        vertexColors: true, fog: false, transparent: true,
+        opacity: NIGHT.signGlowOpacity, blending: THREE.AdditiveBlending, depthWrite: false,
+      }), glowPlacements);
+    if (glow) {
+      glow.visible = false;
+      nightSigns.push(glow);
+    }
   }
+  return nightSigns;
 }
 
 function buildDocks(group, rng, collision) {
@@ -621,8 +663,8 @@ function buildLandmarks(group, garage, hospital, collision) {
   addFlatSign(group, 'CLINICA SOLARIS', hospital.x, 10.5, hospital.z + 6.9, 0, {
     bg: '#204f45', color: '#fff3d4', border: '#37e0d6', size: 44,
   });
-  collision.add(garage.x - 8.5, garage.x + 8.5, garage.z - 7, garage.z + 7);
-  collision.add(hospital.x - 8.5, hospital.x + 8.5, hospital.z - 7, hospital.z + 7);
+  collision.add(garage.x - 8, garage.x + 8, garage.z - 6, garage.z + 6);
+  collision.add(hospital.x - 8, hospital.x + 8, hospital.z - 6.5, hospital.z + 6.5);
 }
 
 export function buildCity(scene, rng, quality = 'mid') {
@@ -640,6 +682,10 @@ export function buildCity(scene, rng, quality = 'mid') {
     originZ: ORIGIN_Z,
   });
   const collision = makeCollision();
+  collision.reserve(
+    SPAWN[0] - SPAWN_CLEARANCE, SPAWN[0] + SPAWN_CLEARANCE,
+    SPAWN[2] - SPAWN_CLEARANCE, SPAWN[2] + SPAWN_CLEARANCE,
+  );
   const garage = { x: -140, z: -140 };
   const hospital = { x: 100, z: -40 };
 
@@ -647,8 +693,8 @@ export function buildCity(scene, rng, quality = 'mid') {
   buildWater(group, level);
   buildBeach(group, level);
   const windowMeshes = buildBuildings(group, stream, collision, garage, hospital);
-  const lampsOn = buildStreetProps(group, stream, level, collision);
-  buildBillboards(group);
+  const lampsOn = buildStreetProps(group, stream, level);
+  const nightSigns = buildBillboards(group);
   buildDocks(group, stream, collision);
   buildLandmarks(group, garage, hospital, collision);
 
@@ -702,7 +748,7 @@ export function buildCity(scene, rng, quality = 'mid') {
       { id: 'viewpoint', name: 'Cerro Alto', x: 200, z: -200 },
     ],
     districts,
-    spawnPoint: [-164, 1.75, 227.5],
+    spawnPoint: SPAWN.slice(),
     spawnLookAt: [-64, 2.15, 206],
     garage,
     hospital,

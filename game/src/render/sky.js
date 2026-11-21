@@ -3,6 +3,7 @@
 
 import * as THREE from 'three';
 import { clamp, lerp, smoothstep } from '../core/rng.js';
+import { NIGHT } from '../config.js';
 
 const HOURS = [0, 5, 6.5, 9, 12, 16, 17.5, 19, 20.5, 24];
 const KEYS = [
@@ -65,6 +66,8 @@ export class SkySystem {
 
     this.ambient = new THREE.HemisphereLight(0xffe6bd, 0x6d5847, 1.5);
     scene.add(this.ambient);
+    this.fill = new THREE.AmbientLight(0xcdd9ff, 0);
+    scene.add(this.fill);
     this.sunLight = new THREE.DirectionalLight(0xffd08a, 2.1);
     scene.add(this.sunLight);
     this.sunOrb = new THREE.Mesh(
@@ -106,6 +109,7 @@ export class SkySystem {
     this.ambient.color.set(a.hemiSky).lerp(SCRATCH_NEXT.set(b.hemiSky), t);
     this.ambient.groundColor.set(a.hemiGround).lerp(SCRATCH_NEXT.set(b.hemiGround), t);
     this.ambient.intensity = lerp(2.4, 1.55, daylight);
+    this.fill.intensity = night * NIGHT.ambient;
     this.sunOrb.material.color.copy(this._sunColor);
     this.sunOrb.visible = this.sunDirection.y > -0.12;
     this.moonOrb.visible = night > 0.15;
