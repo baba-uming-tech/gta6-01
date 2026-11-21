@@ -1,5 +1,6 @@
-// Deterministic randomness and the small numeric helpers shared by every system.
-// makeRng drives world generation; makeRngAt gives a stable stream for a grid cell.
+// Shared numeric helpers and a repeatable source of randomness used across the game.
+// makeRng seeds the generator that builds the world, while makeRngAt derives an unvarying
+// stream tied to a single grid cell so its results stay stable however cells are visited.
 
 export function makeRng(seed) {
   let state = (seed >>> 0) || 0x9e3779b9;

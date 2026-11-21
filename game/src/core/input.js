@@ -1,5 +1,6 @@
-// Input is polled once per frame: keys holds held codes, pressed() is true only on the frame a
-// code goes down, and the mouse deltas/wheel are cleared by endFrame() at the bottom of the loop.
+// Input is sampled once each frame. The keys set holds the codes currently held down, while
+// pressed() reports a code only on the frame it first goes down. Pointer movement and wheel
+// deltas accumulate between frames, then endFrame() clears them once the loop has finished.
 
 const MOUSE_CODES = new Set(['Mouse0', 'Mouse1', 'Mouse2']);
 const ALIASES = {
