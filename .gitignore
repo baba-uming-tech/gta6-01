@@ -1,3 +1,4 @@
+# Ignore generated output and local files
 out/
 node_modules/
 .DS_Store

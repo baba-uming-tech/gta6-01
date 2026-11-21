@@ -1,102 +1,111 @@
-# VELAMAR — build brief (read this first, every session)
+# VELAMAR — build brief (read fully at the start of each session)
 
-This repository is an entry for make.fun's **"Make GTA 6"** bounty (`gta6-01`). The entry is a
-**complete, original open-world crime game** that runs in desktop Chrome from static files under
-`game/`, with **no network request** at run time. It is judged from 3-4 screenshots of the game
-itself plus an outline of the source. Completeness and looks in the screenshots decide the score.
+The `gta6-01` repository is our entry for the make.fun **"Make GTA 6"** bounty. Our deliverable is a
+**full, wholly original open-world crime game** that desktop Chrome plays from static files in `game/`;
+no internet request may be made during play. Judging uses 3-4 captures of the running game alongside a
+source summary, and weighs how complete the game feels and how the captures look.
 
-Rules that constrain the build (hard):
+Non-negotiable build rules:
 
-- Everything under `game/` is static: `game/index.html` opens from any static server and plays
-  offline. Every script, module, image and sound is a file under `game/` or a `data:` URI.
-- No asset, name, logo, character, map, music or text from GTA / Rockstar or any other commercial
-  game. The city, people, cars, brands, story and sound are ours.
-- three.js is vendored at `game/vendor/three.module.min.js` (MIT). Import it as `three` through the
-  import map in `index.html`.
-- `main.ts` (Node 22, already written) copies `game/` and `screenshots/` to `/output` and writes
-  `dossier.json`. Do not change `main.ts` behaviour, `vendor/makefun-game.ts`, `serve.ts`, `LICENSE`.
-- Screenshots: 3-4 files in `screenshots/`, 1280x720 JPEG, each a real render of this game, the
-  first by name is the cover. They are taken by `tools/shoot.mjs` (Playwright) from `?shot=` states.
+- Everything under `game/` is static. `game/index.html` has to run offline through any static server,
+  with scripts, modules, images and audio sourced from files in `game/` or from `data:` URIs.
+- No GTA / Rockstar material — and nothing from any other commercial title — may be included: no
+  assets, names, logos, characters, maps, music or text. We devise the city, inhabitants, vehicles,
+  brands, story and sounds ourselves.
+- three.js (MIT) is kept locally at `game/vendor/three.module.min.js`. The `index.html` import map
+  points the bare specifier `three` at that file.
+- `main.ts` is already complete for Node 22: it copies `game/` and `screenshots/` into `/output` and
+  writes `dossier.json`. Leave it, `vendor/makefun-game.ts`, `serve.ts` and `LICENSE` untouched.
+- `screenshots/` should contain 3-4 real in-game renders, each a 1280x720 JPEG; the alphabetically
+  first image becomes the cover. `tools/shoot.mjs` (Playwright) creates them by visiting `?shot=` states.
 
-Working rules for the agent:
+Advice for whoever builds it:
 
-- Work in small, complete steps. Every change must leave the game bootable: after you finish a
-  step, run `node tools/smoke.mjs` (Playwright; prints console errors and a frame-time sample) and
-  fix what it reports before you stop.
-- Keep the module contracts below. If a contract has to change, change it in this file in the same
-  step and keep every caller in sync.
-- One file, one job. Name files and functions for what they do: the judge sees file paths and the
-  first declarations of each file.
-- No per-frame allocation in hot loops (reuse vectors), no `new` inside `update()` where avoidable,
-  no shadow maps, no post-processing.
+- Work in small, self-contained steps that always leave the game playable. After each one, run
+  `node tools/smoke.mjs` — Playwright checks console errors and samples frame time — and clear every
+  problem it reports before stopping.
+- The module interfaces below are binding. If one must change, update this document and every caller
+  within that same step.
+- One responsibility per file, with descriptive file and function names: the judge looks at paths and
+  at the first declarations in each file.
+- Keep hot paths free of per-frame allocations: reuse vectors, avoid `new` inside `update()` where
+  possible, and use neither shadow maps nor post-processing.
 
 ---
 
 ## 1. The game
 
-**Title:** VELAMAR — a sun-soaked coastal city of glass towers, palm boulevards, a marina and a
-salt-bleached old quarter. Spanish-Caribbean mood, our own names:
+**Title:** VELAMAR — a sun-baked coastal metropolis of glass towers, palm-lined boulevards, a marina
+and a salt-bleached old quarter. Its mood is Spanish-Caribbean, and we invented every name:
 
-- City: **Velamar**. Districts: **Costanera** (beachfront strip), **Centro** (towers, banks),
-  **Mercado** (low-rises, awnings, neon), **Muelle** (docks and containers), **Cerro Alto** (hillside
-  streets with stairs, a viewpoint).
-- Player: **Rafa Quintero**, a dock worker who starts running errands for a fixer.
-- Crew: **Nina Salas** (fixer, missions 1-3, 7), **Tuco Bravo** (mechanic, garage, missions 2, 6),
-  **La Vieja** (debt collector, mission 4), **Coronel Mena** (antagonist, missions 5, 8).
-- Police: **Policía de Velamar (PVD)** — white-and-blue cruisers, "PVD" on the hood, an air unit
-  ("Gaviota") at 4-5 stars.
-- Brands the city shows: **Sol Bravo** (beer), **Radio Marea 88.7** (radio), **Banco Cocal**.
+- **Velamar** divides into **Costanera** (the beachfront strip), **Centro** (towers and banks),
+  **Mercado** (low buildings, awnings and neon), **Muelle** (wharves and container stacks), and
+  **Cerro Alto** (steep streets with stairs and a viewpoint).
+- The player is **Rafa Quintero**, a dock labourer who starts out taking work from a fixer.
+- Other characters: **Nina Salas**, the fixer (missions 1-3 and 7); **Tuco Bravo**, the garage
+  mechanic (missions 2 and 6); **La Vieja**, a debt collector (mission 4); and **Coronel Mena**, the
+  villain (missions 5 and 8).
+- Police are the **Policía de Velamar (PVD)**, with white-and-blue patrol cars marked "PVD" on the
+  bonnet and the "Gaviota" aircraft appearing at 4-5 stars.
+- Local adverts promote **Sol Bravo** beer, **Radio Marea 88.7** and **Banco Cocal**.
 
-Mood and look: late-afternoon gold light, long shadows, warm haze, saturated bougainvillea, teal
-water; at night: sodium street lamps, neon signs, lit windows, red/blue police lights. Coherent,
-sun-bleached, never grey. No HUD element may cover the centre of the screen.
+The visual target is golden late-afternoon sun, long shadows, warm haze, vivid bougainvillea and
+turquoise water; after dark, sodium lamps, glowing signs, lit windows and red/blue police strobes
+take over. The look stays coherent, sun-faded and never grey, with no HUD covering screen centre.
 
-Controls (keyboard + mouse):
+Keyboard and mouse controls:
 
-- `WASD` move / drive, `Shift` sprint (on foot) or handbrake (car), `Space` jump / handbrake.
-- Mouse look (pointer lock), `E` enter/exit vehicle, `F` fire, right mouse aim, `R` reload,
-  `1 2 3` weapons, `C` camera distance, `M` map, `Esc` pause, `F5` save, `F9` load.
+- `WASD` move or drive; `Shift` sprint on foot or handbrake in a car; `Space` jump or handbrake.
+- Mouse look via pointer lock; `E` enter or leave a vehicle; `F` fire; right mouse button aim;
+  `R` reload; `1 2 3` pick a weapon; `C` adjust camera distance; `M` map; `Esc` pause; `F5` save;
+  `F9` load.
 
 ## 2. Systems and acceptance criteria
 
-Each of these must work in the built game and appear in at least one screenshot.
+Each feature below must work in the finished build and appear in at least one capture.
 
-1. **City** — a grid of blocks with asphalt roads, lane markings, kerbs and sidewalks, buildings in
-   three archetypes (glass tower, midrise, low-rise with awnings), palms, street lamps, traffic
-   lights, benches, hydrants, billboards with our brands, a beach with sand and water, a marina with
-   piers and moored hulls, container stacks at the docks. Roads are drivable end to end; buildings
-   block movement (AABB collision, broadphase grid).
-2. **Player on foot** — third-person camera with a spring arm that avoids walls, walk/run, a
-   procedural walk cycle (arms and legs swing, body bob), jump, land, footstep sound.
-3. **Vehicles** — six bodies (sedan, coupe, van, pickup, sports, police cruiser) built from merged
-   boxes with vertex colours so each car is one draw call; arcade physics with grip, drift at speed,
-   brake lights, headlights at night; enter/exit with `E`; damage and smoke when wrecked.
-4. **Traffic and pedestrians** — at least 24 cars and 40 pedestrians alive around the player on the
-   road graph and sidewalks, lane-following with car-following slowdown, respawn behind the player,
-   pedestrians who flinch and flee from gunfire and from a car horn.
-5. **Wanted level** — 0-5 stars from crimes (assault, car theft, shooting, hitting a pedestrian,
-   killing a cop). Police cruisers chase on the road graph, foot officers pursue and shoot, a
-   roadblock spawns at 3 stars, the air unit at 4. Losing sight of the player for 20-40 s cools the
-   level down. Wanted stars, sirens and lightbars must be visible in the HUD and in world.
-6. **Combat** — pistol, SMG, shotgun with distinct spread, rate and sound; hitscan against police and
-   pedestrians with hit sparks; muzzle flash, tracers, recoil; player health and armour, bleed-out
-   damage flash, death, respawn at the nearest hospital with money lost.
-7. **Missions and story** — 8 missions with giver markers, typed dialogue, objective markers, waypoint
-   arrows on the minimap, rewards (money), unlock order, and a completion screen. Objectives:
-   go-to, steal vehicle, deliver vehicle, kill target, survive wanted level, checkpoint race, escort.
-8. **HUD and minimap** — health and armour bars, cash, wanted stars, weapon and ammo, clock and
-   district name, a live top-down minimap (roads, blocks, player arrow, police blips, mission
-   marker, garage) drawn on a 2D canvas, speedometer while driving, toast messages, mission dialogue
-   box. Must stay readable at 1280x720.
-9. **Menus, save, pause** — start screen with the title, New Game / Continue, settings (mouse
-   sensitivity, volume, quality low/mid/high, invert Y), pause menu (Resume, Settings, Save, Load,
-   Quit to title), save/load in `localStorage` (position, money, health, weapons, wanted level,
-   mission progress, time of day), game over and restart.
-10. **Audio** — all procedural through Web Audio API (no audio files): engine tone that follows
-    speed, tyre screech, gunshots per weapon, siren, footsteps, pickups, UI clicks, an ambient city
-    bed and a short looping music theme. Audio starts on the first click (browser autoplay rule).
-11. **Day/night** — a clock that advances (about 1 game hour per 30 s), sun and sky colour by hour,
-    fog matching, street lamps and window lights on at night, headlights on cars at night.
+1. **City** — a grid of blocks, asphalt roads with lane paint, kerbs and pavements; three building
+   types (glass towers, midrise blocks, low-rise shops with awnings); palms, road lamps, traffic
+   signals, benches, hydrants and billboards for our own brands. Include a sandy beach and sea, a
+   marina with jetties and moored boats, and stacked containers at the docks. Cars may travel a
+   whole road; buildings block movement via AABB collision sped up by a broadphase grid.
+2. **Player on foot** — an over-the-shoulder camera on a spring arm that shortens near obstacles,
+   walking and running, an animated stride (swinging arms and legs plus body bob), jumping,
+   landing and footstep audio.
+3. **Vehicles** — six shapes: sedan, coupe, van, pickup, sports car and police cruiser. Build each
+   from merged boxes with vertex colours so one car takes one draw call. Arcade handling covers grip
+   and high-speed drift; include brake lights, night headlights, `E` to enter and exit, and damage
+   with smoke once wrecked.
+4. **Traffic and pedestrians** — maintain at least 24 cars and 40 citizens near the player, cars on
+   the road graph and walkers on pavements. Traffic keeps to lanes, slows for cars ahead and
+   respawns behind the player. Pedestrians flinch and flee from gunfire and car horns.
+5. **Wanted level** — crimes (assault, stealing a car, shooting, hitting a pedestrian, killing an
+   officer) raise a 0-5 star rating. Cruisers chase on roads and patrol officers pursue on foot and
+   shoot; roadblocks arrive at 3 stars and the aircraft at 4. The rating cools after 20-40 seconds
+   out of sight. Stars, sirens and flashing lightbars must be clear on the HUD and in the world.
+6. **Combat** — pistol, SMG and shotgun with distinct spread, firing rate and sound. Hitscan shots
+   against police and pedestrians create impact sparks, muzzle flash, tracers and recoil. Track
+   health and armour, show a damage flash as the player bleeds out, handle death and respawn at the
+   nearest hospital with a cash penalty.
+7. **Missions and story** — 8 missions, each with a marker over the giver, typed dialogue,
+   objectives, a minimap waypoint arrow, a money reward, an unlock order and a completion screen.
+   Objectives include going somewhere, stealing a vehicle, delivering it, eliminating a target,
+   surviving a wanted level, a checkpoint race and an escort.
+8. **HUD and minimap** — display health and armour meters, cash, wanted stars, current weapon and
+   ammo, the clock and the district name. A live top-down minimap on a 2D canvas shows roads,
+   blocks, the player's arrow, police blips, the mission marker and the garage. Add a speedometer
+   while driving, toast messages and a mission dialogue box. Everything stays legible at 1280x720.
+9. **Menus, saving and pause** — a title screen with New Game / Continue plus settings for mouse
+   sensitivity, volume, quality (low/mid/high) and inverted Y. Pause offers Resume, Settings, Save,
+   Load and Quit to title. `localStorage` stores and restores position, money, health, weapons,
+   wanted level, mission progress and time of day. Include game over and restart.
+10. **Audio** — generate every sound with the Web Audio API and ship no audio files. Provide an engine
+    note that tracks speed, tyre squeal, a distinct gunshot per weapon, sirens, footsteps, pickup
+    sounds, interface clicks, an ambient city layer and a brief looping music theme. Audio starts on
+    the first click to satisfy browser autoplay rules.
+11. **Day/night** — a clock advancing roughly 1 in-game hour every 30 seconds, with sun position and
+    sky colour set by the hour and fog matched to it. Street lamps and windows light up after dark,
+    and cars switch their headlights on at night.
 
 ## 3. Module contracts
 
@@ -154,33 +163,36 @@ state (`menu`, `play`, `paused`, `dead`), wiring, and `window.game` for debuggin
 `window.__velamar = { ready:true, stats }` when the first frame has rendered, and
 `window.__shotReady = true` when a `?shot=` state has settled (used by `tools/shoot.mjs`).
 
-## 4. Look and budget
+## 4. Visual style and performance limits
 
-- Palette: sky `#ffd9a0` to `#7fc4e8`, asphalt `#3b3f45`, kerb `#c9c2b2`, stucco `#f2e2c9` /
-  `#e8b06a` / `#f5f0e6`, glass `#8fb7c9`, foliage `#2f6b3f`, sand `#e6d3a8`, water `#1d7f8c`,
-  neon `#ff4f7a` / `#37e0d6`.
-- Budget: at most ~250 draw calls and ~180k triangles in the worst street view; 60 fps on a mid
-  laptop. Use `InstancedMesh` for buildings, palms, lamps, props, traffic bodies and pedestrians;
-  merge each unique car and character into one geometry; reuse one material per family; no shadows.
-- Detail is bought with silhouettes, colour and props, not polygon count.
-- Fake contact shadows: a dark translucent quad under each car and character.
+- Palette: sky ranging from `#ffd9a0` to `#7fc4e8`, asphalt `#3b3f45`, kerbs `#c9c2b2`, stucco in
+  `#f2e2c9`, `#e8b06a` and `#f5f0e6`, glass `#8fb7c9`, foliage `#2f6b3f`, sand `#e6d3a8`, water
+  `#1d7f8c`, and neon accents `#ff4f7a` and `#37e0d6`.
+- Budget: roughly 250 draw calls and 180k triangles at most, even on the busiest street, with 60 fps
+  on a mid-range laptop. Use `InstancedMesh` for buildings, palms, lamps, street props, traffic
+  bodies and pedestrians. Merge each distinct vehicle and character into one geometry, share one
+  material per family and disable shadows.
+- Create density with silhouettes, colour and props instead of more polygons.
+- Put a dark translucent quad under every vehicle and character in place of real shadows.
 
-## 5. Screenshot states (`?shot=`)
+## 5. Capture states (`?shot=`)
 
-`tools/shoot.mjs` opens the game at `?shot=<name>&seed=7`, waits for `window.__shotReady`, and
-saves `screenshots/<name>.jpg` at 1280x720, JPEG quality 82. Required states, each staged to show
-several systems at once:
+The screenshot runner opens `?shot=<name>&seed=7`, waits for `window.__shotReady`, then saves
+`screenshots/<name>.jpg` at 1280x720 with JPEG quality 82. Four staged states are required, and each
+one should display several systems at once:
 
-1. `1-cover` — golden hour, on foot on the Costanera boulevard: traffic, pedestrians, palms, a
-   mission marker ahead, HUD with minimap, objective text. The city must read as a city.
-2. `2-chase` — driving a coupe at speed on a three-lane street, three police cruisers behind with
-   lightbars, 3 stars in the HUD, minimap blips, speedometer.
-3. `3-combat` — night in Mercado: on foot, four PVD officers shooting, muzzle flash and tracers,
-   health low, 4 stars, the air unit's searchlight overhead, neon signs.
-4. `4-mission` — inside the mission dialogue moment at the marina with the objective marker, purple
-   dusk, cars parked, a boat in the water, cash reward toast.
+1. `1-cover` — golden-hour light, Rafa walking the Costanera boulevard with moving traffic, walkers,
+   palms, a distant mission marker and HUD elements including the minimap and objective text. The
+   image must read unmistakably as a living city.
+2. `2-chase` — a coupe speeding along a three-lane road, three police cruisers in pursuit with active
+   lightbars, three HUD stars, police blips on the minimap and a visible speedometer.
+3. `3-combat` — night-time in Mercado: on foot, four PVD officers firing, muzzle flashes and tracer
+   rounds in the air, low health, four stars, the aircraft searchlight sweeping overhead and neon
+   signs nearby.
+4. `4-mission` — the marina dialogue beat with its objective marker, purple dusk, parked cars, a boat
+   on the water and a cash-reward toast.
 
-`shots.json` at the repo root lists the same states with their query.
+The repository-root `shots.json` records these same states and their queries.
 
 ## 6. Build order (one step per session)
 
@@ -204,13 +216,13 @@ several systems at once:
 
 ## 7. Tools
 
-- `node serve.ts` serves `game/` at http://localhost:8080 for a person to play.
-- `node tools/smoke.mjs` (write it in step 1) serves `game/` itself on a free port and opens it in headless Chromium with every
-  network request outside localhost blocked, plays for a few seconds with scripted input, and
-  prints console errors, `window.__velamar.stats` and any failed request. Exit code 1 on error.
-- `node tools/shoot.mjs` writes the screenshots.
+- Use `node serve.ts` to serve `game/` at http://localhost:8080 for human playtesting.
+- `node tools/smoke.mjs`, written in step 1, serves `game/` on a free port, starts headless Chromium,
+  blocks all off-localhost requests, sends scripted input for several seconds and prints console
+  errors, `window.__velamar.stats` and failed requests. Any failure gives exit status 1.
+- Run `node tools/shoot.mjs` to generate the screenshots.
 
-Environment for both tools (already installed, not part of the entry):
+Both harnesses rely on this preinstalled environment, which is not part of the submission:
 
 ```
 NODE_PATH=/workspace/tools/qa/node_modules
@@ -219,5 +231,5 @@ LD_LIBRARY_PATH=/workspace/.tmp/libs/usr/lib/x86_64-linux-gnu
 PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1
 ```
 
-Launch Chromium with `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader
---no-sandbox` (software GL: it is slower than a GPU, so keep the budget in section 4).
+Launch Chromium using `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader
+--no-sandbox`. This software renderer is slower than a GPU, so the budgets in section 4 are important.

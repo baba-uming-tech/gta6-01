@@ -1,30 +1,31 @@
-# AGENTS.md — how to work in this repository
+# AGENTS.md — working notes
 
-This repository is the entry for make.fun's **"Make GTA 6"** bounty (`gta6-01`): VELAMAR, an
-original open-world crime game that runs in a desktop browser from static files under `game/`.
+## What this is
 
-## Every session, in this order
+`gta6-01` is our make.fun **"Make GTA 6"** entry. The product is VELAMAR, an original browser crime
+game whose static files live in `game/`.
 
-1. Read `BRIEF.md` in full before you write anything. It holds the game's design, the module
-   contracts, the build order (section 6) and the tools (section 7).
-2. Find the next unfinished step in `BRIEF.md` section 6 by looking at which files exist under
-   `game/src/` and whether `node tools/smoke.mjs` passes. Do that step, completely.
-3. Run `node tools/smoke.mjs` (create it as part of step 1 if it is missing) and fix what it
-   reports: console errors, failed offsite requests, a blank screen. Do not stop with a broken game.
-4. Commit is not required; leave the working tree with the step finished and the game bootable.
+## Working order
 
-## Rules that do not change
+- Before touching any file in a session, read all of `BRIEF.md`. It holds the design, the module
+  signatures, the phase list in section 6 and the commands in section 7.
+- Compare section 6 with what exists in `game/src/` and with the result of `node tools/smoke.mjs`,
+  then take the first unfinished phase and carry it through to completion.
+- After every code change, run `node tools/smoke.mjs`; create it in phase 1 if it is missing. Clear any
+  console errors, requests that leave the host, or a blank canvas. Never leave the game broken.
+- Commits are not required. The aim is a completed phase and a game that still launches.
 
-- `game/` must run offline: no `http:`, `https:` or `//host` reference in any file under `game/`,
-  no CDN, no font from the network. three.js is vendored at `game/vendor/three.module.min.js` and
-  imported as `three`.
-- Everything is original: no Grand Theft Auto, Rockstar Games or other commercial game's names,
-  characters, map, art, music or text. The city is Velamar, our own.
-- Do not change `main.ts`, `serve.ts`, `vendor/makefun-game.ts`, `LICENSE`, or the interfaces in
-  `BRIEF.md` section 3. If a contract has to change, change it in `BRIEF.md` in the same step and
-  keep every caller in sync.
-- Keep one file to one job and name functions for what they do; the judge reads file paths and the
-  first declarations of every file.
-- The game's entry point is `game/index.html`; `src/main.js` boots it.
-- Keep `window.__velamar = { ready, stats }` and `window.__shotReady` working: the smoke test and the
-  screenshot tool read them.
+## Rules
+
+- `game/` must work offline: no `http:`, `https:` or `//host`, no CDN and no remote fonts. The local
+  copy of three.js is `game/vendor/three.module.min.js`, imported under the name `three`.
+- Use only original work. GTA/Rockstar and other commercial-game names, characters, maps, images,
+  music and text are prohibited. Velamar is a city of our own invention.
+- Treat `main.ts`, `serve.ts`, `vendor/makefun-game.ts`, `LICENSE` and the interfaces in section 3 of
+  `BRIEF.md` as frozen. If an interface must change, edit the brief and all its callers in that same
+  step.
+- Give each file one responsibility and use descriptive file names, since graders inspect paths and
+  first declarations.
+- `game/index.html` is the page players open, and `src/main.js` starts the game.
+- Keep `window.__velamar = { ready, stats }` and `window.__shotReady` available for the smoke and
+  screenshot tools.
