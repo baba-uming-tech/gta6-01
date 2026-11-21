@@ -17,7 +17,7 @@ const SHOTS = {
     cruisers: [
       { x: -167, z: 206, heading: 0.3 },
       { x: -161, z: 204, heading: -0.3 },
-      { x: -164, z: 221, heading: 0 },
+      { x: -164, z: 240, heading: 0 },
     ],
   },
   '3-combat': {
