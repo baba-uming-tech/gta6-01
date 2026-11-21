@@ -204,8 +204,8 @@ several systems at once:
 
 ## 7. Tools
 
-- `node serve.ts` serves `game/` at http://localhost:8080.
-- `node tools/smoke.mjs` (write it in step 1) opens the served game in headless Chromium with every
+- `node serve.ts` serves `game/` at http://localhost:8080 for a person to play.
+- `node tools/smoke.mjs` (write it in step 1) serves `game/` itself on a free port and opens it in headless Chromium with every
   network request outside localhost blocked, plays for a few seconds with scripted input, and
   prints console errors, `window.__velamar.stats` and any failed request. Exit code 1 on error.
 - `node tools/shoot.mjs` writes the screenshots.
