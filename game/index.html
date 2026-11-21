@@ -3,17 +3,161 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Block Dodger</title>
+<title>VELAMAR</title>
 <style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #11141b; }
-  #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
-  /* Read aloud, never shown: the status line screen readers announce. */
-  #status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #ffd9a0; color: #fff8e8;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  #app { position: fixed; inset: 0; }
+  #app canvas { display: block; width: 100%; height: 100%; }
+  #hud { position: fixed; inset: 0; pointer-events: none; }
+  #perf { display: none; position: absolute; top: 10px; left: 14px; text-align: left; z-index: 5;
+    font: 12px/1.5 ui-monospace, "SFMono-Regular", Consolas, monospace;
+    color: #fff; text-shadow: 0 1px 3px #000, 0 0 8px #000; }
+  body.debug #perf { display: block; }
+  .hud-off .hud-vitals, .hud-off .hud-map, .hud-off .hud-combat, .hud-off .hud-objective,
+  .hud-off .hud-dialogue, .hud-off .hud-prompt, .hud-off .hud-toasts { display: none; }
+
+  .hud-vitals { position: absolute; left: 22px; bottom: 20px; width: 200px; height: 76px; }
+  .hud-stars { position: absolute; left: 0; top: 0; width: 95px; height: 15px; display: flex; gap: 1px; }
+  .hud-stars i { position: relative; display: block; width: 15px; height: 15px;
+    color: rgba(255,235,195,.55); filter: drop-shadow(0 1px 2px #000); }
+  .hud-stars i::before, .hud-stars i::after { content: ''; position: absolute; inset: 0;
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    background: currentColor; }
+  .hud-stars i::after { inset: 2.5px; background: #18242e; }
+  .hud-stars i.on { color: #ffd65b; filter: drop-shadow(0 0 6px #ff9d29) drop-shadow(0 1px 2px #000); }
+  .hud-stars i.on::after { inset: 0; background: #ffd65b; }
+  .hud-stars.hot i.on { animation: star-pulse .85s ease-in-out infinite alternate; }
+  @keyframes star-pulse { from { opacity: .74; } to { opacity: 1; } }
+  .hud-cash { position: absolute; left: 0; top: 17px; font: 700 15px/16px ui-monospace, Consolas, monospace;
+    color: #ffe09a; text-shadow: 0 2px 5px #000; }
+  .hud-cash span { opacity: .8; }
+  .hud-portrait { position: absolute; left: 0; bottom: 0; width: 46px; height: 46px; box-sizing: border-box;
+    border-radius: 50%; border: 2px solid rgba(255,226,170,.7); background:
+      radial-gradient(circle at 50% 34%, #d9a476 0 22%, transparent 23%),
+      radial-gradient(ellipse at 50% 88%, #2f6b7f 0 46%, transparent 47%), #e8d2ae;
+    box-shadow: inset 0 -3px 8px rgba(0,0,0,.35), 0 2px 6px #000; }
+  .hud-bars { position: absolute; left: 40px; bottom: 2px; width: 160px; }
+  .hud-bar { position: relative; width: 160px; height: 9px; }
+  .hud-bar + .hud-bar { margin-top: 4px; }
+  .hud-bar-track { display: block; width: 160px; height: 9px; box-sizing: border-box;
+    background: rgba(5,11,16,.8); border: 1px solid rgba(255,235,195,.38);
+    border-radius: 2px; overflow: hidden; box-shadow: 0 1px 4px #000; }
+  .hud-bar:nth-child(2) .hud-bar-track { height: 7px; }
+  .hud-bar-track i { display: block; height: 100%; width: 100%;
+    background: linear-gradient(90deg, #37c07a, #a9e368); transition: width .18s linear; }
+  .hud-bar:nth-child(2) .hud-bar-track i { background: linear-gradient(90deg, #3a8dff, #7fd4ff); }
+  .hud-bar.critical .hud-bar-track i { background: linear-gradient(90deg, #d84448, #ff8a5c); }
+  .hud-bar-key, .hud-bar-value { position: absolute; top: 50%; transform: translateY(-50%);
+    z-index: 1; font: 700 7px/1 ui-monospace, Consolas, monospace; color: #fff8e8; text-shadow: 0 1px 2px #000; }
+  .hud-bar-key { left: 5px; }
+  .hud-bar-value { right: 5px; }
+
+  .hud-map { position: absolute; top: 18px; right: 22px; width: 168px; }
+  .hud-map-head { display: flex; align-items: center; justify-content: center; gap: 5px;
+    height: 16px; margin-bottom: 4px; font: 700 12px/16px system-ui, sans-serif;
+    letter-spacing: .04em; color: #fff8e8; text-shadow: 0 1px 3px #000, 0 0 6px #000; }
+  .hud-map-head b { color: #ffe09a; font-variant-numeric: tabular-nums; }
+  .hud-map-sep { color: #ffd65b; font-size: 8px; }
+  .hud-map-frame { width: 168px; height: 168px; border: 2px solid rgba(255,226,170,.7);
+    border-radius: 50%; box-shadow: 0 5px 20px rgba(0,0,0,.45), 0 0 0 1px rgba(12,22,30,.55); }
+  .hud-map-canvas { display: block; width: 168px; height: 168px; border-radius: 50%; }
+
+  .hud-combat { position: absolute; right: 22px; bottom: 20px; width: 200px; text-align: right; }
+  .hud-speed { margin-bottom: 6px; }
+  .hud-speed b { font: 800 26px/1 ui-monospace, Consolas, monospace; color: #fff3d4; text-shadow: 0 0 8px #ff9d29, 0 2px 4px #000; }
+  .hud-speed small { margin-left: 3px; font: 700 9px/1 system-ui, sans-serif; letter-spacing: .1em; color: #ffd65b; }
+  .hud-gear { display: block; margin-top: 2px; font: 700 10px/1.2 system-ui, sans-serif;
+    letter-spacing: .06em; color: #ffe6b0; text-shadow: 0 1px 3px #000; }
+  .hud-weapon { font: 700 13px/1.35 ui-monospace, Consolas, monospace; text-shadow: 0 1px 4px #000; }
+  .hud-weapon-name { display: block; color: #ffe6b0; }
+  .hud-ammo b { font: 800 13px/1 ui-monospace, Consolas, monospace; }
+  .hud-ammo small { font: 600 13px/1 ui-monospace, Consolas, monospace; color: #cfd8dc; }
+  .hud-weapon.reloading .hud-ammo b { color: #ffd65b; }
+
+  .hud-objective { position: absolute; top: 18px; left: 50%; transform: translateX(-50%);
+    width: max-content; max-width: 420px; padding: 7px 14px; text-align: center;
+    font: 700 12px/1.3 system-ui, sans-serif; letter-spacing: .04em; color: #fff8e8;
+    background: rgba(15,29,40,.78); border: 1px solid rgba(255,214,91,.5);
+    border-radius: 999px; box-shadow: 0 4px 16px rgba(0,0,0,.35); text-shadow: 0 1px 4px #000; }
+  .hud-objective-mark { margin-right: 7px; color: #ffd65b; }
+  .hud-dialogue { position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%);
+    width: 620px; min-height: 54px; padding: 9px 16px 12px;
+    background: linear-gradient(90deg, rgba(12,24,34,.9), rgba(12,24,34,.75));
+    border-left: 3px solid #ffd65b; border-radius: 3px; box-shadow: 0 6px 20px rgba(0,0,0,.4); }
+  .hud-dialogue-name { display: block; margin-bottom: 3px; font: 800 11px/1 system-ui, sans-serif;
+    letter-spacing: .13em; text-transform: uppercase; color: #ffd65b; }
+  .hud-dialogue-line { display: block; font: 500 14px/1.35 system-ui, sans-serif; color: #fff8e8;
+    text-shadow: 0 1px 3px #000; }
+  .hud-prompt { position: absolute; left: 50%; bottom: 104px; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 8px; padding: 5px 12px; white-space: nowrap;
+    background: rgba(12,24,34,.8); border: 1px solid rgba(255,226,170,.44); border-radius: 3px;
+    font: 700 12px/1 system-ui, sans-serif; text-shadow: 0 1px 3px #000; }
+  .hud-prompt kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px;
+    background: #ffe6b0; color: #18242e; border-radius: 3px; font: 800 11px/1 system-ui, sans-serif; }
+  .hud-toasts { position: absolute; top: 58px; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .hud-toast { padding: 6px 16px; background: rgba(15,29,40,.84); border: 1px solid #ffd65b;
+    border-radius: 3px; font: 700 13px/1.2 system-ui, sans-serif; color: #ffe9a8;
+    text-shadow: 0 1px 3px #000; box-shadow: 0 5px 16px rgba(0,0,0,.35);
+    animation: toast-in .22s ease-out; }
+  @keyframes toast-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+  #menus { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    pointer-events: auto; background: linear-gradient(155deg, rgba(14,29,44,.60), rgba(126,61,36,.30) 55%, rgba(10,24,38,.72)); }
+  .menu-card { width: min(92vw, 660px); max-height: 96vh; overflow: auto; text-align: center;
+    padding: 26px 40px 22px; box-sizing: border-box;
+    background: linear-gradient(165deg, rgba(15,33,49,.90), rgba(26,45,56,.84));
+    border: 1px solid rgba(255,226,170,.55); border-radius: 5px;
+    box-shadow: 0 18px 60px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.05); }
+  .menu-compact { width: min(92vw, 420px); padding: 30px 36px 26px; }
+  .menu-eyebrow { font: 700 10px/1.4 system-ui, sans-serif; letter-spacing: .32em; color: #ffd65b; }
+  .menu-eyebrow.danger { color: #ff7f79; }
+  .menu-title { margin: 4px 0 2px; font-size: clamp(48px, 8vw, 92px); font-weight: 800; line-height: 1;
+    letter-spacing: .17em; color: #fff3d4; text-shadow: 0 4px 0 #b6552f, 0 10px 30px rgba(0,0,0,.55); }
+  .menu-title.small { font-size: 42px; letter-spacing: .14em; margin: 8px 0 4px; }
+  .menu-title.danger-text { color: #ffd7cf; text-shadow: 0 4px 0 #8b2b31, 0 10px 26px #000; }
+  .menu-subtitle { margin: 8px 0 4px; font: 600 13px/1.5 system-ui, sans-serif; letter-spacing: .22em; color: #ffe6b0; }
+  .menu-rule { height: 1px; margin: 16px auto 18px; width: 88%; background: linear-gradient(90deg, transparent, rgba(255,214,91,.7), transparent); }
+  .menu-buttons { display: flex; flex-direction: column; gap: 8px; align-items: stretch; width: min(100%, 300px); margin: 0 auto; }
+  .menu-button { cursor: pointer; padding: 10px 18px; font: 800 13px/1.2 system-ui, sans-serif; letter-spacing: .15em;
+    color: #fff3d4; background: rgba(12,26,38,.55); border: 1px solid rgba(255,226,170,.5);
+    border-radius: 3px; transition: background .12s, transform .12s; }
+  .menu-button:hover:not(:disabled) { background: rgba(255,220,160,.20); transform: translateY(-1px); }
+  .menu-button.primary { background: linear-gradient(180deg, #d78b45, #a84f32); border-color: #ffe0a4; color: #fffaf0; }
+  .menu-button.primary:hover { background: linear-gradient(180deg, #eda35b, #bb5e39); }
+  .menu-button.subtle { font-size: 11px; opacity: .8; }
+  .menu-button:disabled { cursor: not-allowed; opacity: .35; filter: saturate(.2); color: #b9b9b9; border-color: #7b7b7b; }
+  .menu-controls { margin-top: 18px; text-align: left; }
+  .menu-controls-title { margin-bottom: 8px; text-align: center; font: 800 10px/1 system-ui, sans-serif;
+    letter-spacing: .28em; color: #ffd65b; }
+  .menu-controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 18px; }
+  .menu-control { display: flex; align-items: center; gap: 8px; font: 500 11px/1.4 system-ui, sans-serif; color: #e9e2d4; }
+  .menu-control kbd { display: inline-grid; place-items: center; min-width: 66px; padding: 3px 5px;
+    background: rgba(255,230,176,.14); border: 1px solid rgba(255,230,176,.4); border-radius: 3px;
+    font: 800 9px/1 ui-monospace, Consolas, monospace; color: #ffe6b0; }
+  .menu-foot { margin-top: 16px; font: 600 9px/1.4 system-ui, sans-serif; letter-spacing: .2em; color: rgba(255,235,195,.55); }
+  .menu-hint { margin-top: 16px; font: 600 10px/1.4 system-ui, sans-serif; letter-spacing: .16em; color: rgba(255,235,195,.6); }
+  .menu-settings { display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; text-align: left; }
+  .menu-setting { display: flex; flex-direction: column; gap: 7px; font: 700 11px/1.3 system-ui, sans-serif;
+    letter-spacing: .1em; color: #ffe6b0; }
+  .menu-setting span { display: flex; justify-content: space-between; }
+  .menu-setting b { color: #fff3d4; font-variant-numeric: tabular-nums; }
+  .menu-setting.inline { flex-direction: row; align-items: center; justify-content: space-between; }
+  .menu-setting input[type="range"] { width: 100%; accent-color: #e39a4c; cursor: pointer; }
+  .menu-setting input[type="checkbox"] { width: 18px; height: 18px; accent-color: #e39a4c; cursor: pointer; }
+  .menu-setting select { cursor: pointer; padding: 7px 10px; color: #fff3d4; font: 700 12px/1 system-ui, sans-serif;
+    letter-spacing: .12em; background: #1a3142; border: 1px solid rgba(255,226,170,.5); border-radius: 3px; }
+  .menu-gameover-note { margin: 0 0 18px; font: 600 12px/1.5 system-ui, sans-serif; letter-spacing: .08em; color: #ffd7cf; }
+  .hidden { display: none !important; }
 </style>
+<script type="importmap">
+{"imports":{"three":"./vendor/three.module.min.js"}}
+</script>
 </head>
 <body>
-<canvas id="game" aria-label="Block Dodger: move the paddle left and right to dodge falling blocks and catch coins"></canvas>
-<p id="status" role="status" aria-live="polite"></p>
+<div id="app"></div>
+<div id="hud"><div id="perf">-- fps · -- draws</div></div>
+<div id="menus"></div>
 <script type="module" src="./src/main.js"></script>
 </body>
 </html>

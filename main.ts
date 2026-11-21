@@ -12,13 +12,29 @@
 // Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:
 //   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
 
-import { cpSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
+// VELAMAR — packages the offline game and its screenshots for the judge.
+import { cpSync, existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildDossier } from './vendor/makefun-game.ts';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 const out = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
+
+if (!existsSync(join(here, 'game', 'index.html'))) {
+  console.error('VELAMAR: missing game/index.html — cannot package the game.');
+  process.exit(1);
+}
+
+function countFiles(directory) {
+  if (!existsSync(directory)) return 0;
+  let total = 0;
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    if (entry.isDirectory()) total += countFiles(join(directory, entry.name));
+    else if (entry.isFile()) total += 1;
+  }
+  return total;
+}
 
 mkdirSync(out, { recursive: true });
 cpSync(join(here, 'game'), join(out, 'game'), { recursive: true });
@@ -39,3 +55,5 @@ writeFileSync(
     game_path_max_bytes: 1000,
   }),
 );
+console.log(`VELAMAR: wrote ${countFiles(join(out, 'game'))} game files and `
+  + `${countFiles(join(out, 'screenshots'))} screenshots to ${out}.`);

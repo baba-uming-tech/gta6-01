@@ -1,61 +1,54 @@
-// Every tuning number and colour in one place. The playfield is a fixed 1280x720 logical area;
-// the renderer scales it to the window, so no rule below depends on the screen size.
+// Every tuning number, colour and control binding for VELAMAR lives here.
+// Distances are metres; one city block is 40 m with a 12 m road and 3 m sidewalks on each side.
 
-export const FIELD = { width: 1280, height: 720, groundY: 664 };
-
-/** The simulation's fixed step, in seconds: 60 updates a second whatever the display's rate. */
-export const STEP = 1 / 60;
-
-export const PLAYER = {
-  width: 72,
-  height: 24,
-  speed: 560,
-  invulnerable: 1.5,
-};
-
-export const LIVES = 3;
-
-export const BLOCK = {
-  minWidth: 40,
-  maxWidth: 110,
-  height: 36,
-  speed: 240,
-  speedPerLevel: 30,
-  speedJitter: 90,
-  interval: 0.55,
-  intervalScale: 0.88,
-  minInterval: 0.14,
-  dodgePoints: 1,
-};
-
-export const COIN = {
-  size: 24,
-  speed: 190,
-  speedPerLevel: 14,
-  interval: 1.4,
-  intervalJitter: 0.8,
-  points: 10,
-};
-
-/** Seconds of play per level, and the last level: speeds and spawn rates stop growing there. */
-export const LEVEL = { seconds: 12, max: 12 };
-
-/** How many falling things can exist at once; the pool is allocated once, at boot. */
-export const POOL_SIZE = 64;
+export const WORLD = { block: 40, road: 12, sidewalk: 3, grid: 14 };
 
 export const PALETTE = {
-  backdrop: '#11141b',
-  sky: '#1b1f2a',
-  ground: '#2a3040',
-  player: '#4fc3f7',
-  block: '#e5534b',
-  coin: '#f2c94c',
-  panel: '#252b38',
-  text: '#eef1f5',
-  muted: '#8b93a3',
+  skyTop: '#7fc4e8',
+  skyHorizon: '#ffd9a0',
+  sun: '#ffd9a0',
+  haze: '#e8c89b',
+  asphalt: '#3b3f45',
+  kerb: '#c9c2b2',
+  stucco: ['#f2e2c9', '#e8b06a', '#f5f0e6'],
+  glass: '#8fb7c9',
+  foliage: '#2f6b3f',
+  sand: '#e6d3a8',
+  water: '#1d7f8c',
+  neon: ['#ff4f7a', '#37e0d6'],
+  ground: '#cbb58c',
+  white: '#fff6e2',
+  black: '#181b20',
 };
 
-export const FONT = 'system-ui, -apple-system, "Segoe UI", sans-serif';
+export const QUALITY = {
+  low: { pixelRatio: 0.75, label: 'low' },
+  mid: { pixelRatio: 1, label: 'mid' },
+  high: { pixelRatio: 1.5, label: 'high' },
+};
 
-/** Where the best score is kept between visits (this browser only). */
-export const BEST_KEY = 'block-dodger.best';
+export const KEYBINDS = {
+  forward: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD',
+  sprint: 'ShiftLeft', jump: 'Space', handbrake: 'ShiftLeft',
+  enter: 'KeyE', fire: 'Mouse0', aim: 'Mouse2', reload: 'KeyR',
+  weapon1: 'Digit1', weapon2: 'Digit2', weapon3: 'Digit3',
+  camera: 'KeyC', map: 'KeyM', pause: 'Escape',
+  save: 'F5', load: 'F9', confirm: 'Enter',
+};
+
+export const DISTRICT = [
+  { id: 'costanera', name: 'Costanera', x: -3, z: 4, color: '#e6d3a8' },
+  { id: 'centro', name: 'Centro', x: 2, z: -2, color: '#8fb7c9' },
+  { id: 'mercado', name: 'Mercado', x: -3, z: -3, color: '#e8b06a' },
+  { id: 'muelle', name: 'Muelle', x: 4, z: 4, color: '#1d7f8c' },
+  { id: 'cerroalto', name: 'Cerro Alto', x: 5, z: -5, color: '#2f6b3f' },
+];
+
+export const VEHICLE = {
+  sedan: { name: 'Sedan', length: 4.5, width: 1.9, height: 1.45, mass: 1.2, topSpeed: 34, accel: 12, grip: 7.5, color: '#b8493f' },
+  coupe: { name: 'Coupe', length: 4.4, width: 1.9, height: 1.28, mass: 1, topSpeed: 46, accel: 16, grip: 8.5, color: '#d8a13c' },
+  van: { name: 'Van', length: 5.4, width: 2.1, height: 2.2, mass: 1.8, topSpeed: 28, accel: 9, grip: 6.5, color: '#d8d2c0' },
+  pickup: { name: 'Pickup', length: 5.3, width: 2.05, height: 1.9, mass: 1.6, topSpeed: 33, accel: 11, grip: 7, color: '#4d7f6d' },
+  sports: { name: 'Sports', length: 4.3, width: 2, height: 1.15, mass: 0.9, topSpeed: 54, accel: 19, grip: 9.5, color: '#c4436b' },
+  police: { name: 'PVD Cruiser', length: 4.8, width: 2, height: 1.5, mass: 1.35, topSpeed: 40, accel: 14, grip: 8, color: '#e8edf2' },
+};
