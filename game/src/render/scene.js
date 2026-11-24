@@ -1,5 +1,5 @@
-// Owns the three.js scene, camera, renderer and the frame statistics. No shadows and no
-// post-processing: the whole game is drawn with Lambert/Basic materials and merged geometry.
+// Owns the three.js scene, camera, renderer and the frame statistics, filmic tone mapped for a high-contrast golden hour.
+// No shadows and no post-processing: the whole game is drawn with Lambert/Basic materials and merged geometry.
 
 import * as THREE from 'three';
 import { PALETTE, QUALITY } from '../config.js';
@@ -13,6 +13,9 @@ export class Renderer {
     this.camera.lookAt(0, 2, 0);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.45;
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.setClearColor(PALETTE.skyHorizon, 1);
     if (host) host.appendChild(this.renderer.domElement);
 

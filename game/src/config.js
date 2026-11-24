@@ -8,7 +8,7 @@ export const PALETTE = {
   skyHorizon: '#ffd9a0',
   sun: '#ffd9a0',
   haze: '#e8c89b',
-  asphalt: '#3b3f45',
+  asphalt: '#545a63',
   kerb: '#c9c2b2',
   stucco: ['#f2e2c9', '#e8b06a', '#f5f0e6'],
   glass: '#8fb7c9',
@@ -16,7 +16,7 @@ export const PALETTE = {
   sand: '#e6d3a8',
   water: '#1d7f8c',
   neon: ['#ff4f7a', '#37e0d6'],
-  ground: '#cbb58c',
+  ground: '#d6c09a',
   white: '#fff6e2',
   black: '#181b20',
 };

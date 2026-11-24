@@ -1,14 +1,18 @@
 const SHOTS = {
   '1-cover': {
-    hour: 17.4,
-    label: 'BOULEVARD · GOLDEN HOUR',
-    player: [-164, 214, Math.PI],
-    camera: [-164, 2.55, 220.4],
-    lookAt: [-164, 1.63, 214],
-    beacon: [-164, 168],
+    hour: 17.7,
+    label: 'COSTANERA · GOLDEN HOUR',
+    player: [-168, 220, -Math.PI / 2],
+    target: [-192, 220],
+    camera: [-162.4, 1.75, 221.0],
+    lookAt: [-168.5, 1.3, 220],
+    wanted: 0,
+    parkedCars: [
+      { specId: 'coupe', x: -171.5, z: 222.2, heading: Math.PI / 2 },
+    ],
   },
   '2-chase': {
-    hour: 16.6,
+    hour: 17.2,
     label: 'CENTRO · PURSUIT',
     coupe: [-164, 214, Math.PI, 24],
     camera: [-164, 2.55, 222.6],
@@ -21,7 +25,7 @@ const SHOTS = {
     ],
   },
   '3-combat': {
-    hour: 22.3,
+    hour: 20.4,
     label: 'MERCADO · 22:18',
     player: [-124, -120, Math.PI],
     camera: [-124, 2.6, -113.8],
@@ -193,6 +197,11 @@ function stageCover(game, shot) {
   game.focus = { x: player.position.x, y: player.position.y + 1, z: player.position.z };
   game.trafficFocus = { x: shot.player[0], z: shot.player[1] };
   game.police?.clear();
+
+  for (const pose of shot.parkedCars ?? []) {
+    const car = game.vehicles?.find((vehicle) => vehicle.specId === pose.specId);
+    car?.setPose(pose.x, pose.z, pose.heading);
+  }
 }
 
 function stageChase(game, shot) {

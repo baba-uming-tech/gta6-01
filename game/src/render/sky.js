@@ -1,5 +1,5 @@
-// Day-night cycle: paints the sky dome, sun, fog and lights from the hour of day. Night lights
-// in the city are toggled through scene.userData.onNightChange by the game wiring.
+// The clock drives every visual here: dome colours, the sun and its glow, haze and lighting all shift on a bold sunset scale.
+// City lamps follow the dark/light switch exposed as scene.userData.onNightChange and wired up by the game.
 
 import * as THREE from 'three';
 import { clamp, lerp, smoothstep } from '../core/rng.js';
@@ -7,16 +7,16 @@ import { NIGHT } from '../config.js';
 
 const HOURS = [0, 5, 6.5, 9, 12, 16, 17.5, 19, 20.5, 24];
 const KEYS = [
-  { top: '#14284f', horizon: '#4b3d64', sun: '#a8bde2', fog: '#2b3656', hemiSky: '#8599c6', hemiGround: '#56515e' },
-  { top: '#1e3358', horizon: '#77546f', sun: '#d78a6e', fog: '#554761', hemiSky: '#6a7195', hemiGround: '#3b3340' },
-  { top: '#5f88b2', horizon: '#f0aa72', sun: '#ffb068', fog: '#e8a57f', hemiSky: '#ffd6aa', hemiGround: '#6b5d55' },
-  { top: '#7fc4e8', horizon: '#d9e8df', sun: '#fff1ce', fog: '#c9dedb', hemiSky: '#e8f4ff', hemiGround: '#807768' },
-  { top: '#7fc4e8', horizon: '#e8f0dc', sun: '#fff5d8', fog: '#d6e6d5', hemiSky: '#eaf6ff', hemiGround: '#8c806c' },
-  { top: '#74b6d8', horizon: '#ffd9a0', sun: '#ffd08a', fog: '#e8c89b', hemiSky: '#ffe6bd', hemiGround: '#7d6c58' },
-  { top: '#6899c0', horizon: '#ffb567', sun: '#ff9d4f', fog: '#eda675', hemiSky: '#ffd3a0', hemiGround: '#6d5847' },
-  { top: '#33446e', horizon: '#e76f50', sun: '#f27044', fog: '#9a5d5a', hemiSky: '#c38e8b', hemiGround: '#4a3b46' },
-  { top: '#1a2c52', horizon: '#7d4d67', sun: '#9a6aa2', fog: '#55465f', hemiSky: '#8f94bd', hemiGround: '#554a56' },
-  { top: '#14284f', horizon: '#4b3d64', sun: '#a8bde2', fog: '#2b3656', hemiSky: '#8599c6', hemiGround: '#56515e' },
+  { top: '#0a1230', horizon: '#2b2748', sun: '#8fa8d8', fog: '#121a30', hemiSky: '#2b3a63', hemiGround: '#191822' },
+  { top: '#152548', horizon: '#7c4a60', sun: '#d9846a', fog: '#3a3150', hemiSky: '#4e5884', hemiGround: '#241f2b' },
+  { top: '#3a6c9c', horizon: '#ff9448', sun: '#ff9440', fog: '#b9704e', hemiSky: '#ffcf9a', hemiGround: '#3a2e2a' },
+  { top: '#4f9fd6', horizon: '#cfe4e0', sun: '#fff3d2', fog: '#a9c6c7', hemiSky: '#dcefff', hemiGround: '#6b6250' },
+  { top: '#3f9cdb', horizon: '#dfeae0', sun: '#fffbe8', fog: '#b6d2cd', hemiSky: '#e4f4ff', hemiGround: '#76694f' },
+  { top: '#3a86c4', horizon: '#ffbe62', sun: '#ffb45c', fog: '#d2924f', hemiSky: '#ffdfae', hemiGround: '#5f4f3c' },
+  { top: '#2a5a98', horizon: '#ff7526', sun: '#ff8828', fog: '#b85934', hemiSky: '#ffab60', hemiGround: '#3f342c' },
+  { top: '#1d3768', horizon: '#dc4c28', sun: '#e85a24', fog: '#713434', hemiSky: '#a2656c', hemiGround: '#2b2330' },
+  { top: '#101e3e', horizon: '#5b3a5e', sun: '#7a5590', fog: '#332a44', hemiSky: '#5b5f8e', hemiGround: '#221d28' },
+  { top: '#0a1230', horizon: '#2b2748', sun: '#8fa8d8', fog: '#121a30', hemiSky: '#2b3a63', hemiGround: '#191822' },
 ];
 
 const SCRATCH_COLOR = new THREE.Color();
@@ -71,11 +71,17 @@ export class SkySystem {
     this.sunLight = new THREE.DirectionalLight(0xffd08a, 2.1);
     scene.add(this.sunLight);
     this.sunOrb = new THREE.Mesh(
-      new THREE.SphereGeometry(52, 16, 12),
+      new THREE.SphereGeometry(88, 18, 14),
       new THREE.MeshBasicMaterial({ color: 0xffd08a, fog: false, depthWrite: false }),
     );
     this.sunOrb.renderOrder = -900;
     scene.add(this.sunOrb);
+    this.sunHalo = new THREE.Mesh(
+      new THREE.SphereGeometry(180, 18, 14),
+      new THREE.MeshBasicMaterial({ color: 0xff8a3c, transparent: true, opacity: 0.30, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }),
+    );
+    this.sunHalo.renderOrder = -950;
+    scene.add(this.sunHalo);
     this.moonOrb = new THREE.Mesh(
       new THREE.SphereGeometry(34, 14, 10),
       new THREE.MeshBasicMaterial({ color: 0xe8e6d4, fog: false, depthWrite: false }),
@@ -105,19 +111,20 @@ export class SkySystem {
 
     this.sunLight.position.copy(this.sunDirection).multiplyScalar(500);
     this.sunLight.color.copy(this._sunColor);
-    this.sunLight.intensity = lerp(0.45, 2.2, daylight) * lerp(1, 0.88, golden * (1 - night));
+    this.sunLight.intensity = lerp(0.55, 2.75, daylight);
     this.ambient.color.set(a.hemiSky).lerp(SCRATCH_NEXT.set(b.hemiSky), t);
     this.ambient.groundColor.set(a.hemiGround).lerp(SCRATCH_NEXT.set(b.hemiGround), t);
-    this.ambient.intensity = lerp(2.4, 1.55, daylight);
+    this.ambient.intensity = lerp(2.3, 1.25, daylight);
     this.fill.intensity = night * NIGHT.ambient;
     this.sunOrb.material.color.copy(this._sunColor);
     this.sunOrb.visible = this.sunDirection.y > -0.12;
+    this.sunHalo.visible = this.sunOrb.visible;
     this.moonOrb.visible = night > 0.15;
 
     if (this.scene.fog) {
       this.scene.fog.color.copy(this.fogColor);
-      this.scene.fog.near = lerp(90, 260, daylight);
-      this.scene.fog.far = lerp(720, 1500, daylight);
+      this.scene.fog.near = lerp(70, 230, daylight);
+      this.scene.fog.far = lerp(520, 1350, daylight);
     }
     if (this.renderer?.renderer) this.renderer.renderer.setClearColor(this.horizonColor, 1);
 
@@ -151,6 +158,7 @@ export class SkySystem {
     if (camera) {
       this.sky.position.copy(camera.position);
       this.sunOrb.position.copy(camera.position).addScaledVector(this.sunDirection, 1800);
+      this.sunHalo.position.copy(this.sunOrb.position);
       this.moonOrb.position.copy(camera.position).addScaledVector(this.sunDirection, -1700);
     }
   }

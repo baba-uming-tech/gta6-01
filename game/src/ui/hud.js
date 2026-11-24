@@ -22,7 +22,7 @@ const TEMPLATE = `
     <div class="hud-map-head">
       <b data-clock>17:12</b><span class="hud-map-sep">◆</span><span data-district>Costanera</span>
     </div>
-    <div class="hud-map-frame"><canvas class="hud-map-canvas" width="168" height="168"></canvas></div>
+    <div class="hud-map-frame"><canvas class="hud-map-canvas" width="200" height="200"></canvas></div>
   </div>
   <div class="hud-combat">
     <div class="hud-speed hidden" data-speed-panel>
